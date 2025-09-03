@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ร้านค้าออนไลน์</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
+        html, body { height: 100%; margin: 0; }
+        body { font-family: 'Kanit', sans-serif; display: flex; flex-direction: column; background-color: #f3f4f6; }
+        #app-container { flex-grow: 1; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-hover:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content { background: white; padding: 2rem; border-radius: 1rem; width: 90%; max-width: 400px; max-height: 90vh; overflow-y: auto; transform: scale(0.9); transition: all 0.3s ease; }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+        .cart-count { position: absolute; top: -5px; right: -10px; background-color: #ef4444; color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 14px; display: flex; justify-content: center; align-items: center; font-weight: bold; border: 2px solid white; }
+    </style>
+</head>
+<body>
+
+    <nav class="bg-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="relative flex items-center justify-between h-20">
+                <div class="flex items-center space-x-8">
+                    <div class="flex-shrink-0">
+                        <div class="text-gray-800 text-xl font-bold"><i class="fas fa-store mr-2 text-purple-600"></i>ร้านค้าออนไลน์</div>
+                    </div>
+                    <div class="hidden sm:flex sm:items-center sm:space-x-8">
+                        <button id="home-btn-desktop" class="text-gray-600 hover:text-purple-600">หน้าแรก</button>
+                        <div class="relative">
+                            <button id="category-menu-btn-desktop" class="text-gray-600 hover:text-purple-600 flex items-center">
+                                หมวดหมู่ <i class="fas fa-caret-down ml-2"></i>
+                            </button>
+                            <div id="category-dropdown-desktop" class="hidden absolute top-full mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50"></div>
+                        </div>
+                        <button id="discount-btn-desktop" class="text-gray-600 hover:text-purple-600 hidden">ส่วนลด</button>
+                        <button id="contact-btn-desktop" class="text-gray-600 hover:text-purple-600">ติดต่อเรา</button>
+                    </div>
+                </div>
+                <div class="hidden sm:flex items-center space-x-4">
+                    <div id="nav-auth-buttons">
+                        <button id="show-login-modal-btn" class="bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700 font-semibold flex items-center">
+                            <i class="fas fa-sign-in-alt mr-2"></i>เข้าสู่ระบบ / สมัครสมาชิก
+                        </button>
+                    </div>
+                    <div id="nav-user-menu" class="hidden relative">
+                         <button id="user-profile-menu" class="flex items-center space-x-2 text-gray-600 hover:text-purple-600">
+                            <span id="username-display" class="font-semibold text-sm"></span>
+                            <i class="fas fa-user-circle text-2xl"></i>
+                        </button>
+                        <div id="logout-dropdown" class="hidden absolute top-full right-0 mt-2 w-36 bg-white rounded-md shadow-lg py-1 z-50">
+                            <button id="logout-btn" class="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100"><i class="fas fa-sign-out-alt w-5 mr-2"></i>ออกจากระบบ</button>
+                        </div>
+                    </div>
+                     <button id="cart-button" class="relative px-4 py-2 rounded-full">
+                        <i class="fas fa-shopping-cart mr-1"></i><span id="cart-count-badge" class="cart-count hidden">0</span>
+                    </button>
+                </div>
+                <div class="sm:hidden flex items-center">
+                    <button id="mobile-menu-btn" class="text-gray-800 text-2xl"><i class="fas fa-bars"></i></button>
+                </div>
+            </div>
+        </div>
+        <div id="mobile-menu" class="sm:hidden hidden bg-white border-t">
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <button id="home-btn-mobile" class="block w-full text-left px-3 py-2 rounded-md">หน้าแรก</button>
+                <div>
+                    <button id="category-menu-btn-mobile" class="block w-full text-left px-3 py-2 rounded-md">หมวดหมู่</button>
+                    <div id="category-dropdown-mobile" class="pl-4 border-l-2 border-gray-200 ml-3 hidden"></div>
+                </div>
+                <button id="discount-btn-mobile" class="block w-full text-left px-3 py-2 rounded-md hidden">ส่วนลด</button>
+                <button id="contact-btn-mobile" class="block w-full text-left px-3 py-2 rounded-md">ติดต่อเรา</button>
+                <div class="border-t my-2"></div>
+                <div id="nav-auth-buttons-mobile">
+                    <button id="show-login-modal-btn-mobile" class="w-full flex items-center justify-center bg-purple-600 text-white px-3 py-2 rounded-md font-semibold"><i class="fas fa-sign-in-alt mr-2"></i>เข้าสู่ระบบ / สมัครสมาชิก</button>
+                </div>
+                <div id="nav-user-menu-mobile" class="hidden">
+                     <button id="logout-btn-mobile" class="w-full text-left flex items-center px-3 py-2 text-red-600"><i class="fas fa-sign-out-alt mr-3"></i>ออกจากระบบ</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <div id="app-container">
+        <div id="main-store-view">
+            <div class="bg-white/80 backdrop-blur-sm sticky top-[80px] z-30 py-4 shadow-sm">
+                <div class="max-w-2xl mx-auto px-4">
+                    <div class="relative"><div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i class="fas fa-search text-gray-400"></i></div><input id="search-input" name="search" class="block w-full pl-12 pr-3 py-3 border border-gray-200 rounded-full bg-gray-100" placeholder="ค้นหาสินค้า..." type="search"></div>
+                </div>
+            </div>
+            <main class="gradient-bg">
+                <section class="py-16">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <h2 id="page-title" class="text-3xl font-bold text-white text-center mb-12">สินค้าและบริการของเรา</h2>
+                        <div id="product-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <div id="contact-view" class="hidden bg-white">
+            <div class="max-w-4xl mx-auto py-16 px-4 text-center">
+                 <h2 class="text-4xl font-bold text-gray-800 mb-6">ช่องทางการติดต่อ</h2>
+                 <p class="text-lg text-gray-600 mb-12">เราพร้อมให้บริการและตอบทุกข้อสงสัยของคุณ</p>
+                 <div id="contact-info-container" class="max-w-sm mx-auto space-y-4"></div>
+            </div>
+        </div>
+        
+        <div id="discount-view" class="hidden bg-white">
+             <div class="max-w-4xl mx-auto py-16 px-4">
+                 <h2 class="text-4xl font-bold text-gray-800 mb-6 text-center">โค้ดส่วนลด</h2>
+                 <p class="text-lg text-gray-600 mb-12 text-center">คลิกที่ปุ่ม "เก็บโค้ด" เพื่อคัดลอกโค้ดไปใช้ในตะกร้าสินค้า</p>
+                 <div id="discount-list-container" class="grid md:grid-cols-2 gap-6"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-gray-800 text-gray-300 pt-12 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="space-y-4">
+                    <h3 id="footer-org-name" class="text-lg font-semibold text-white"></h3>
+                    <p id="footer-address-line1" class="text-sm"></p>
+                    <p id="footer-address-line2" class="text-sm"></p>
+                    <p id="footer-phone" class="text-sm"></p>
+                    <p id="footer-email" class="text-sm"></p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-4">ลิงก์ด่วน</h3>
+                    <div id="footer-quick-links" class="space-y-2"></div>
+                </div>
+                <div>
+                     <h3 class="text-lg font-semibold text-white mb-4">ติดตาม</h3>
+                     <div id="footer-social-links" class="flex items-center space-x-4"></div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-sm">
+                <p id="footer-copyright"></p>
+            </div>
+        </div>
+    </footer>
+
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-content relative">
+             <button class="close-modal-btn absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            <div id="login-view">
+                <h2 class="text-2xl font-bold text-center mb-6">เข้าสู่ระบบ</h2>
+                <form id="login-form" class="space-y-4">
+                    <input type="text" id="login-username" placeholder="ชื่อผู้ใช้" required class="w-full px-4 py-2 border rounded-md">
+                    <input type="password" id="login-password" placeholder="รหัสผ่าน" required class="w-full px-4 py-2 border rounded-md">
+                    <button type="submit" class="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700">เข้าสู่ระบบ</button>
+                </form>
+                <p class="text-center text-sm mt-4">ยังไม่มีบัญชี? <button id="show-register-btn" class="text-purple-600 font-semibold">สมัครสมาชิก</button></p>
+            </div>
+            <div id="register-view" class="hidden">
+                <h2 class="text-2xl font-bold text-center mb-6">สร้างบัญชีใหม่</h2>
+                <form id="register-form" class="space-y-4">
+                    <input type="text" id="reg-username" placeholder="ชื่อผู้ใช้" required class="w-full px-4 py-2 border rounded-md">
+                    <input type="password" id="reg-password" placeholder="รหัสผ่าน" required class="w-full px-4 py-2 border rounded-md">
+                    <button type="submit" class="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700">สมัครสมาชิก</button>
+                </form>
+                <p class="text-center text-sm mt-4">มีบัญชีอยู่แล้ว? <button id="show-login-btn" class="text-purple-600 font-semibold">เข้าสู่ระบบ</button></p>
+            </div>
+        </div>
+    </div>
+    
+    <div id="cart-modal" class="modal-overlay">
+        <div class="modal-content relative">
+             <button class="close-modal-btn absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">ตะกร้าสินค้า</h2>
+            <div id="cart-items" class="mb-6"></div>
+            <div class="border-t pt-4">
+                <div class="flex items-center space-x-2 mb-4">
+                    <input type="text" id="discount-code-input" placeholder="กรอกโค้ดส่วนลด" class="w-full px-3 py-2 border rounded-md">
+                    <button id="apply-discount-btn" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">ใช้โค้ด</button>
+                </div>
+                <div id="discount-summary" class="hidden text-right text-green-600 mb-2 font-semibold"></div>
+                <div class="flex justify-between items-center text-xl font-bold">
+                    <span>ยอดรวมสุทธิ:</span>
+                    <span id="cart-total" class="text-purple-600">฿0</span>
+                </div>
+                <button id="checkout-button" class="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 mt-4">ดำเนินการชำระเงิน</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="checkout-modal" class="modal-overlay">
+        <div class="modal-content relative">
+            <button class="close-modal-btn absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">กรอกข้อมูลเพื่อชำระเงิน</h2>
+            <form id="checkout-form" class="space-y-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">ชื่อ-นามสกุล</label>
+                    <input type="text" id="checkout-name" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                </div>
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-gray-700">เบอร์โทรศัพท์</label>
+                    <input type="tel" id="checkout-phone" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                </div>
+                <div>
+                    <label for="address" class="block text-sm font-medium text-gray-700">ที่อยู่ (ถ้ามี)</label>
+                    <textarea id="checkout-address" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"></textarea>
+                </div>
+                <div>
+                    <label for="payment-slip" class="block text-sm font-medium text-gray-700">แนบสลิปชำระเงิน</label>
+                    <input type="file" id="payment-slip" required accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 text-lg font-semibold">ยืนยันการสั่งซื้อ</button>
+            </form>
+        </div>
+    </div>
+    
+<script>
+    let products = [];
+    let cart = [];
+    let storeConfig = {};
+    let appliedDiscount = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadStoreConfig();
+        loadProducts(); 
+        loadDiscounts();
+        loadFooterData();
+        checkLoginStatus();
+        setupAuthSystem();
+        setupMenuAndModals();
+        setupSearch(); 
+        setupCheckoutForm();
+    });
+
+    function showView(viewId) {
+        document.getElementById('main-store-view').classList.add('hidden');
+        document.getElementById('contact-view').classList.add('hidden');
+        document.getElementById('discount-view').classList.add('hidden');
+        document.getElementById(viewId).classList.remove('hidden');
+    }
+
+    function loadFooterData() {
+        google.script.run.withSuccessHandler(populateFooter).getFooterData();
+    }
+
+    function populateFooter(data) {
+        if (!data.success) return;
+        document.getElementById('footer-org-name').textContent = data.info.orgName || '';
+        document.getElementById('footer-address-line1').textContent = data.info.addressLine1 || '';
+        document.getElementById('footer-address-line2').textContent = data.info.addressLine2 || '';
+        document.getElementById('footer-phone').textContent = data.info.phone ? `โทร: ${data.info.phone}` : '';
+        document.getElementById('footer-email').textContent = data.info.email ? `อีเมล: ${data.info.email}` : '';
+        document.getElementById('footer-copyright').textContent = data.info.copyright || '';
+        const quickLinksContainer = document.getElementById('footer-quick-links');
+        quickLinksContainer.innerHTML = data.quickLinks.map(link => 
+            `<a href="${link.url}" class="block text-sm hover:text-white transition-colors">${link.title}</a>`
+        ).join('');
+        const socialLinksContainer = document.getElementById('footer-social-links');
+        const iconMap = {
+            facebook: 'fab fa-facebook',
+            youtube: 'fab fa-youtube',
+            instagram: 'fab fa-instagram',
+            twitter: 'fab fa-twitter'
+        };
+        socialLinksContainer.innerHTML = data.socialLinks.map(link => {
+            const iconClass = iconMap[link.platform.toLowerCase()] || 'fas fa-link';
+            return `<a href="${link.url}" target="_blank" class="text-xl hover:text-white transition-colors"><i class="${iconClass}"></i></a>`;
+        }).join('');
+    }
+
+    function loadStoreConfig() {
+        google.script.run.withSuccessHandler(response => {
+            if (response.success) {
+                storeConfig = response.config;
+                populateContactView();
+            }
+        }).getStoreConfig();
+    }
+
+    function populateContactView() {
+        const container = document.getElementById('contact-info-container');
+        let htmlContent = '';
+        if (storeConfig.facebookUrl) { htmlContent += `<a href="${storeConfig.facebookUrl}" target="_blank" class="flex items-center justify-center w-full bg-blue-600 text-white py-3 rounded-lg text-lg hover:bg-blue-700"><i class="fab fa-facebook mr-3"></i>Facebook</a>`; }
+        if (storeConfig.lineUrl) { htmlContent += `<a href="${storeConfig.lineUrl}" target="_blank" class="flex items-center justify-center w-full bg-green-500 text-white py-3 rounded-lg text-lg hover:bg-green-600"><i class="fab fa-line mr-3"></i>LINE</a>`; }
+        if (storeConfig.phoneNumber) { htmlContent += `<a href="tel:${storeConfig.phoneNumber}" class="flex items-center justify-center w-full bg-gray-700 text-white py-3 rounded-lg text-lg hover:bg-gray-800"><i class="fas fa-phone mr-3"></i>${storeConfig.phoneNumber}</a>`; }
+        container.innerHTML = htmlContent;
+    }
+    
+    function loadDiscounts() {
+        google.script.run.withSuccessHandler(displayDiscounts).getDiscounts();
+    }
+
+    function displayDiscounts(discounts) {
+        if (discounts && discounts.length > 0) {
+            document.getElementById('discount-btn-desktop').classList.remove('hidden');
+            document.getElementById('discount-btn-mobile').classList.remove('hidden');
+            const container = document.getElementById('discount-list-container');
+            container.innerHTML = discounts.map(d => `
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 flex justify-between items-center shadow-sm">
+                    <div>
+                        <p class="text-2xl font-bold text-purple-600 tracking-wider">${d.code}</p>
+                        <p class="text-gray-600">${d.description || ''}</p>
+                    </div>
+                    <button onclick="collectCode('${d.code}')" class="bg-purple-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors">เก็บโค้ด</button>
+                </div>
+            `).join('');
+        }
+    }
+
+    function collectCode(code) {
+        navigator.clipboard.writeText(code).then(() => {
+            Swal.fire({
+                icon: 'success',
+                title: 'คัดลอกโค้ดแล้ว!',
+                text: `โค้ด "${code}" ถูกคัดลอกแล้ว สามารถนำไปใช้ในตะกร้าสินค้าได้เลย`,
+                confirmButtonText: 'รับทราบ'
+            });
+        });
+    }
+
+    function checkLoginStatus() {
+        const user = sessionStorage.getItem('loggedInUser');
+        const authButtons = document.getElementById('nav-auth-buttons');
+        const authButtonsMobile = document.getElementById('nav-auth-buttons-mobile');
+        const userMenu = document.getElementById('nav-user-menu');
+        const userMenuMobile = document.getElementById('nav-user-menu-mobile');
+        const cartButton = document.getElementById('cart-button');
+
+        if (user) {
+            authButtons.classList.add('hidden');
+            authButtonsMobile.classList.add('hidden');
+            userMenu.classList.remove('hidden');
+            userMenuMobile.classList.remove('hidden');
+            document.getElementById('username-display').textContent = JSON.parse(user).username;
+            cartButton.disabled = false;
+            cartButton.classList.remove('bg-gray-200', 'text-gray-400', 'cursor-not-allowed');
+            cartButton.classList.add('bg-purple-600', 'text-white', 'hover:bg-purple-700');
+        } else {
+            authButtons.classList.remove('hidden');
+            authButtonsMobile.classList.remove('hidden');
+            userMenu.classList.add('hidden');
+            userMenuMobile.classList.add('hidden');
+            cartButton.disabled = true;
+            cartButton.classList.add('bg-gray-200', 'text-gray-400', 'cursor-not-allowed');
+            cartButton.classList.remove('bg-purple-600', 'text-white', 'hover:bg-purple-700');
+        }
+        if (products.length > 0) {
+            displayProducts(products);
+        }
+    }
+
+    function promptLogin() {
+        document.getElementById('auth-modal').classList.add('active');
+    }
+
+    function setupAuthSystem() {
+        const authModal = document.getElementById('auth-modal');
+        const loginView = document.getElementById('login-view');
+        const registerView = document.getElementById('register-view');
+
+        document.getElementById('show-login-modal-btn').addEventListener('click', promptLogin);
+        document.getElementById('show-login-modal-btn-mobile').addEventListener('click', promptLogin);
+        authModal.querySelector('.close-modal-btn').addEventListener('click', () => authModal.classList.remove('active'));
+
+        document.getElementById('show-register-btn').addEventListener('click', () => {
+            loginView.classList.add('hidden');
+            registerView.classList.remove('hidden');
+        });
+        document.getElementById('show-login-btn').addEventListener('click', () => {
+            registerView.classList.add('hidden');
+            loginView.classList.remove('hidden');
+        });
+
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const credentials = {
+                username: e.target.elements['login-username'].value,
+                password: e.target.elements['login-password'].value
+            };
+            Swal.fire({ title: 'กำลังตรวจสอบ...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            google.script.run.withSuccessHandler(response => {
+                Swal.close();
+                if (response.success) {
+                    sessionStorage.setItem('loggedInUser', JSON.stringify(response.user));
+                    authModal.classList.remove('active');
+                    checkLoginStatus();
+                    Swal.fire({ icon: 'success', title: 'เข้าสู่ระบบสำเร็จ!', text: 'ยินดีต้อนรับ ' + credentials.username, timer: 1500, showConfirmButton: false });
+                } else { 
+                    Swal.fire({ icon: 'error', title: 'ผิดพลาด!', text: response.message });
+                }
+            }).withFailureHandler(err => {
+                 Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.message });
+            }).loginUser(credentials);
+        });
+
+        document.getElementById('register-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const userInfo = {
+                username: document.getElementById('reg-username').value,
+                password: document.getElementById('reg-password').value
+            };
+            Swal.fire({ title: 'กำลังสมัครสมาชิก...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            google.script.run.withSuccessHandler(response => {
+                Swal.close();
+                if (response.success) {
+                    Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: response.message });
+                    document.getElementById('show-login-btn').click();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'สมัครไม่สำเร็จ!', text: response.message });
+                }
+            }).withFailureHandler(err => {
+                 Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.message });
+            }).registerUser(userInfo);
+        });
+
+        const logout = () => {
+            sessionStorage.removeItem('loggedInUser');
+            cart = [];
+            appliedDiscount = null;
+            checkLoginStatus();
+            showView('main-store-view');
+            Swal.fire({ icon: 'info', title: 'ออกจากระบบแล้ว', timer: 1500, showConfirmButton: false });
+        };
+        document.getElementById('logout-btn').addEventListener('click', logout);
+        document.getElementById('logout-btn-mobile').addEventListener('click', logout);
+
+        document.getElementById('user-profile-menu').addEventListener('click', () => {
+            document.getElementById('logout-dropdown').classList.toggle('hidden');
+        });
+    }
+
+    function loadProducts() {
+        const productGrid = document.getElementById('product-grid');
+        productGrid.innerHTML = `<div class="text-center text-white/70 col-span-full"><p>กำลังโหลดสินค้า...</p></div>`;
+        google.script.run.withSuccessHandler(renderProducts).withFailureHandler(showError).getProducts();
+    }
+
+    function showError(error) {
+        document.getElementById('product-grid').innerHTML = `<p class="text-center text-red-400 col-span-full">${error.message}</p>`;
+    }
+
+    function renderProducts(data) {
+        if (data.error) { showError(data); return; }
+        products = data;
+        displayCategoryButtons();
+        displayProducts(products);
+    }
+    
+    function displayCategoryButtons() {
+        const categories = ['ทั้งหมด', ...new Set(products.map(p => p.category).filter(Boolean))];
+        const desktopContainer = document.getElementById('category-dropdown-desktop');
+        const mobileContainer = document.getElementById('category-dropdown-mobile');
+        const buttonsHtml = categories.map(cat => 
+            `<a href="#" onclick="event.preventDefault(); filterByCategory('${cat}')" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">${cat}</a>`
+        ).join('');
+        desktopContainer.innerHTML = buttonsHtml;
+        mobileContainer.innerHTML = buttonsHtml;
+    }
+
+    function filterByCategory(category) {
+        document.getElementById('page-title').textContent = category === 'ทั้งหมด' ? 'สินค้าและบริการของเรา' : `หมวดหมู่: ${category}`;
+        showView('main-store-view');
+        if (category === 'ทั้งหมด') {
+            displayProducts(products);
+        } else {
+            const filtered = products.filter(p => p.category === category);
+            displayProducts(filtered);
+        }
+        document.getElementById('category-dropdown-desktop').classList.add('hidden');
+        document.getElementById('category-dropdown-mobile').classList.add('hidden');
+    }
+
+    function displayProducts(productsToDisplay) {
+        const grid = document.getElementById('product-grid');
+        grid.innerHTML = '';
+        const user = sessionStorage.getItem('loggedInUser');
+
+        if (!productsToDisplay || productsToDisplay.length === 0) {
+            grid.innerHTML = `<p class="text-center text-white/80 col-span-full text-xl">ไม่พบสินค้า</p>`;
+            return;
+        }
+
+        productsToDisplay.forEach((p) => {
+            const originalIndex = products.findIndex(op => op.name === p.name);
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-2xl shadow-xl overflow-hidden card-hover flex flex-col';
+            
+            const isFree = !p.price || Number(p.price) === 0;
+
+            const buyButtonHtml = user
+                ? `<button onclick="addToCart(${originalIndex})" class="w-full py-2 font-semibold bg-green-500 text-white hover:bg-green-600 rounded-md flex items-center justify-center"><i class="fas fa-shopping-cart mr-2"></i>สั่งซื้อ</button>`
+                : `<button onclick="promptLogin()" class="w-full py-2 font-semibold bg-gray-400 text-white cursor-pointer hover:bg-gray-500 rounded-md flex items-center justify-center"><i class="fas fa-lock mr-2"></i>เข้าสู่ระบบเพื่อสั่งซื้อ</button>`;
+            
+            const hasDemo = p.demoLink && p.demoLink.trim() !== '';
+            const demoButtonHtml = hasDemo ? `<a href="${p.demoLink}" target="_blank" class="w-full text-center py-2 font-semibold bg-gray-500 text-white hover:bg-gray-600 rounded-md flex items-center justify-center"><i class="fas fa-eye mr-2"></i>Demo</a>` : '';
+            
+            const hasDownload = p.downloadLink && p.downloadLink.trim() !== '';
+            let downloadButtonHtml = '';
+            if (hasDownload) {
+                if (isFree) {
+                    downloadButtonHtml = `<a href="${p.downloadLink}" target="_blank" class="w-full text-center py-2 font-semibold bg-blue-500 text-white hover:bg-blue-600 rounded-md flex items-center justify-center"><i class="fas fa-download mr-2"></i>ดาวน์โหลด</a>`;
+                } else {
+                    downloadButtonHtml = `<button onclick="Swal.fire('ไม่สามารถดาวน์โหลดได้', 'สินค้าชิ้นนี้มีค่าใช้จ่าย กรุณาสนับสนุนก่อนนะจ๊ะ', 'info')" class="w-full py-2 font-semibold bg-blue-300 text-white cursor-not-allowed rounded-md flex items-center justify-center"><i class="fas fa-download mr-2"></i>ดาวน์โหลด</button>`;
+                }
+            }
+
+            card.innerHTML = `
+                <div class="h-32 bg-gray-100 flex items-center justify-center overflow-hidden">
+                    ${p.imageUrl ? `<img src="${p.imageUrl}" alt="${p.name}" class="w-full h-full object-contain">` : `<i class="${p.icon || 'fas fa-box'} text-5xl text-gray-400"></i>`}
+                </div>
+                <div class="p-4 flex flex-col flex-grow">
+                    <h3 class="font-semibold">${p.name}</h3>
+                    <p class="text-sm text-gray-600 mb-2 h-10">${p.description || ''}</p>
+                    <div class="text-lg font-bold text-purple-600 mt-auto mb-3">
+                        ${isFree ? 'ฟรี' : `฿${Number(p.price).toLocaleString()}`}
+                    </div>
+                    <div class="grid grid-cols-1 gap-2 mt-auto text-sm">
+                        ${!isFree ? buyButtonHtml : ''}
+                        ${demoButtonHtml}
+                        ${downloadButtonHtml}
+                    </div>
+                </div>`;
+            grid.appendChild(card);
+        });
+    }
+
+    function setupSearch() {
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase().trim();
+            showView('main-store-view');
+            const filtered = term ? products.filter(p => p.name.toLowerCase().includes(term) || (p.description && p.description.toLowerCase().includes(term))) : products;
+            displayProducts(filtered);
+        });
+    }
+    
+    function setupMenuAndModals() {
+        document.getElementById('mobile-menu-btn').addEventListener('click', () => document.getElementById('mobile-menu').classList.toggle('hidden'));
+        document.getElementById('category-menu-btn-desktop').addEventListener('click', () => document.getElementById('category-dropdown-desktop').classList.toggle('hidden'));
+        document.getElementById('category-menu-btn-mobile').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('category-dropdown-mobile').classList.toggle('hidden');
+        });
+        
+        document.getElementById('home-btn-desktop').addEventListener('click', () => showView('main-store-view'));
+        document.getElementById('home-btn-mobile').addEventListener('click', () => showView('main-store-view'));
+        document.getElementById('contact-btn-desktop').addEventListener('click', () => showView('contact-view'));
+        document.getElementById('contact-btn-mobile').addEventListener('click', () => showView('contact-view'));
+        document.getElementById('discount-btn-desktop').addEventListener('click', () => showView('discount-view'));
+        document.getElementById('discount-btn-mobile').addEventListener('click', () => showView('discount-view'));
+        
+        document.getElementById('cart-button').addEventListener('click', () => {
+            if (!sessionStorage.getItem('loggedInUser')) {
+                promptLogin();
+            } else {
+                document.getElementById('cart-modal').classList.add('active');
+                updateCartDisplay();
+            }
+        });
+
+        document.querySelectorAll('.close-modal-btn').forEach(btn => {
+            if(btn) btn.addEventListener('click', (e) => e.target.closest('.modal-overlay').classList.remove('active'));
+        });
+
+        document.getElementById('apply-discount-btn').addEventListener('click', applyDiscount);
+
+        document.getElementById('checkout-button').addEventListener('click', () => {
+            document.getElementById('cart-modal').classList.remove('active');
+            document.getElementById('checkout-modal').classList.add('active');
+        });
+    }
+
+    function setupCheckoutForm() {
+        const form = document.getElementById('checkout-form');
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('payment-slip');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                Swal.fire('ผิดพลาด!', 'กรุณาแนบสลิปชำระเงิน', 'error');
+                return;
+            }
+            Swal.fire({ title: 'กำลังส่งข้อมูล...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const fileData = { name: file.name, mimeType: file.type, bytes: event.target.result.split(",")[1] };
+                const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                let discountValue = 0;
+                if (appliedDiscount) {
+                     if (appliedDiscount.type === 'percent') { discountValue = (subtotal * appliedDiscount.discountValue) / 100; } 
+                     else { discountValue = appliedDiscount.discountValue; }
+                }
+                const finalTotal = subtotal - discountValue;
+                const formData = {
+                    name: document.getElementById('checkout-name').value,
+                    phone: document.getElementById('checkout-phone').value,
+                    address: document.getElementById('checkout-address').value,
+                    cartSummary: cart.map(p => `${p.name} (x${p.quantity})`).join(', ') + 
+                                 ` | ยอดรวม: ${subtotal.toFixed(2)}` +
+                                 (appliedDiscount ? ` | ส่วนลด (${appliedDiscount.code}): -${discountValue.toFixed(2)}` : '') +
+                                 ` | ยอดสุทธิ: ${finalTotal.toFixed(2)}`
+                };
+                google.script.run.withSuccessHandler(orderSuccess).withFailureHandler(orderFailure).processOrder(formData, fileData);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function orderSuccess(response) {
+        if (response.success) {
+            Swal.fire({ icon: 'success', title: 'สั่งซื้อสำเร็จ!', text: 'ขอบคุณที่ใช้บริการ เราจะติดต่อกลับโดยเร็วที่สุด' })
+            .then(() => {
+                cart = [];
+                appliedDiscount = null;
+                updateCartDisplay();
+                document.getElementById('checkout-modal').classList.remove('active');
+                document.getElementById('checkout-form').reset();
+            });
+        } else {
+            orderFailure(response);
+        }
+    }
+
+    function orderFailure(error) {
+         Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: error.message || 'ไม่สามารถบันทึกข้อมูลได้' });
+    }
+
+    function applyDiscount() {
+        const codeInput = document.getElementById('discount-code-input');
+        const code = codeInput.value.trim();
+        if (!code) return;
+        google.script.run.withSuccessHandler(response => {
+            if (response.success) {
+                appliedDiscount = response.discount;
+                Swal.fire('สำเร็จ!', 'ใช้โค้ดส่วนลดเรียบร้อยแล้ว', 'success');
+                updateCartDisplay();
+            } else {
+                appliedDiscount = null;
+                Swal.fire('ผิดพลาด!', response.message, 'error');
+                updateCartDisplay();
+            }
+            codeInput.value = '';
+        }).validateDiscountCode(code);
+    }
+
+    function addToCart(index) {
+        const p = products[index];
+        const existing = cart.find(item => item.name === p.name);
+        if (existing) { existing.quantity++; } 
+        else { cart.push({ ...p, quantity: 1 }); }
+        updateCartDisplay();
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        updateCartDisplay();
+    }
+
+    function updateCartDisplay() {
+        const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+        const cartBadge = document.getElementById('cart-count-badge');
+        cartBadge.textContent = count;
+        cartBadge.classList.toggle('hidden', count === 0);
+        const itemsContainer = document.getElementById('cart-items');
+        const totalEl = document.getElementById('cart-total');
+        const discountSummaryEl = document.getElementById('discount-summary');
+        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        let discountValue = 0;
+        let finalTotal = subtotal;
+        if (appliedDiscount && cart.length > 0) {
+            if (appliedDiscount.type === 'percent') {
+                discountValue = (subtotal * appliedDiscount.discountValue) / 100;
+            } else {
+                discountValue = appliedDiscount.discountValue;
+            }
+            finalTotal = subtotal - discountValue;
+            if (finalTotal < 0) finalTotal = 0;
+            discountSummaryEl.textContent = `ส่วนลด (${appliedDiscount.code}): -฿${discountValue.toFixed(2)}`;
+            discountSummaryEl.classList.remove('hidden');
+        } else {
+            appliedDiscount = null;
+            discountSummaryEl.classList.add('hidden');
+        }
+        if (cart.length === 0) {
+            itemsContainer.innerHTML = '<p class="text-center text-gray-500">ตะกร้าของคุณว่างเปล่า</p>';
+        } else {
+            itemsContainer.innerHTML = cart.map((item, i) => `
+                <div class="flex justify-between items-center py-2 border-b">
+                    <div>
+                        <p class="font-semibold">${item.name}</p>
+                        <p class="text-sm text-gray-500">฿${Number(item.price).toLocaleString()} x ${item.quantity}</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="font-semibold">฿${(item.price * item.quantity).toLocaleString()}</span>
+                        <button onclick="removeFromCart(${i})" class="text-red-500 text-xl">&times;</button>
+                    </div>
+                </div>`).join('');
+        }
+        totalEl.textContent = `฿${finalTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('checkout-button').disabled = cart.length === 0;
+    }
+</script>
+
+</body>
+</html>
+เเก้ใขโค้ดอินเด็กให้มีปุ่มหมวดหมู่ๆข้างๆกับติดต่อเรา ละปุ่มส่วนลดให้สามารถเก็บโค้ดส่วนลดได้ ถ้ายังไม่มีการกำหนดโค้ดส่วนลดในชีตไม่ต้องเเสดงให้เก็บโค้ดส่วนลดเขียนมาไม่ต้องย่อโค้ด

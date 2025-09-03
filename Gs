@@ -1,0 +1,190 @@
+// =================================================================
+// ============== กรุณาตั้งค่าตรงนี้เท่านั้น ==========================
+// =================================================================
+
+const SHEET_ID = 'YOUR_SHEET_ID';                    // ★★★ ใส่ไอดี Google Sheet ของคุณที่นี่
+const PRODUCTS_SHEET_NAME = 'Products';              // ★★★ ชื่อชีตข้อมูลสินค้า
+const USERS_SHEET_NAME = 'Users';                    // ★★★ ชื่อชีตข้อมูลผู้ใช้งาน
+const ORDERS_SHEET_NAME = 'Orders';                  // ★★★ ชื่อชีตสำหรับเก็บข้อมูลการสั่งซื้อ
+const CONFIG_SHEET_NAME = 'Config';                  // ★★★ ชื่อชีตสำหรับเก็บข้อมูลตั้งค่า
+const DISCOUNTS_SHEET_NAME = 'Discounts';            // ★★★ ชื่อชีตสำหรับโค้ดส่วนลด
+const ORDERS_FOLDER_ID = 'YOUR_ORDERS_FOLDER_ID';    // ★★★ ไอดีโฟลเดอร์สำหรับเก็บสลิป
+// --- ชีตใหม่สำหรับ Footer ---
+const FOOTER_INFO_SHEET_NAME = 'FooterInfo';
+const QUICK_LINKS_SHEET_NAME = 'QuickLinks';
+const SOCIAL_LINKS_SHEET_NAME = 'SocialLinks';
+
+// =================================================================
+
+function doGet() {
+  return HtmlService.createTemplateFromFile('index').evaluate()
+    .setTitle('ร้านค้าออนไลน์')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function getFooterData() {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+
+    const infoSheet = ss.getSheetByName(FOOTER_INFO_SHEET_NAME);
+    const infoData = infoSheet.getDataRange().getValues();
+    infoData.shift();
+    const info = {};
+    infoData.forEach(row => { if (row[0]) { info[row[0]] = row[1]; } });
+
+    const quickLinksSheet = ss.getSheetByName(QUICK_LINKS_SHEET_NAME);
+    const quickLinksData = quickLinksSheet.getDataRange().getValues();
+    const quickLinksHeaders = quickLinksData.shift();
+    const quickLinks = quickLinksData.map(row => {
+        let link = {};
+        quickLinksHeaders.forEach((h, i) => { link[h] = row[i]; });
+        return link;
+    });
+
+    const socialLinksSheet = ss.getSheetByName(SOCIAL_LINKS_SHEET_NAME);
+    const socialLinksData = socialLinksSheet.getDataRange().getValues();
+    const socialLinksHeaders = socialLinksData.shift();
+    const socialLinks = socialLinksData.map(row => {
+        let link = {};
+        socialLinksHeaders.forEach((h, i) => { link[h] = row[i]; });
+        return link;
+    });
+
+    return { success: true, info, quickLinks, socialLinks };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function getDiscounts() {
+  try {
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(DISCOUNTS_SHEET_NAME);
+    if (!sheet) return [];
+    const data = sheet.getDataRange().getValues();
+    const headers = data.shift();
+    const discounts = data.map(row => {
+      let discount = {};
+      headers.forEach((header, i) => { if (header) discount[header] = row[i]; });
+      return discount;
+    }).filter(d => d.code);
+    return discounts;
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+function getStoreConfig() {
+  try {
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(CONFIG_SHEET_NAME);
+    if (!sheet) throw new Error("ไม่พบชีต '" + CONFIG_SHEET_NAME + "'");
+    const data = sheet.getDataRange().getValues();
+    data.shift();
+    const config = {};
+    data.forEach(row => { if (row[0]) { config[row[0]] = row[1]; } });
+    return { success: true, config: config };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function validateDiscountCode(code) {
+  try {
+    if (!code || code.trim() === '') return { success: false, message: 'กรุณากรอกโค้ดส่วนลด' };
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(DISCOUNTS_SHEET_NAME);
+    if (!sheet) throw new Error("ไม่พบชีต '" + DISCOUNTS_SHEET_NAME + "'");
+    const data = sheet.getDataRange().getValues();
+    const headers = data.shift();
+    const codeIndex = headers.indexOf('code');
+    for (const row of data) {
+      if (row[codeIndex] && row[codeIndex].toString().toUpperCase() === code.toUpperCase()) {
+        const discount = {};
+        headers.forEach((header, i) => { discount[header] = row[i]; });
+        return { success: true, discount: discount };
+      }
+    }
+    return { success: false, message: 'โค้ดส่วนลดไม่ถูกต้อง' };
+  } catch(e) {
+    return { success: false, message: e.message };
+  }
+}
+
+function getProducts() {
+  try {
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(PRODUCTS_SHEET_NAME);
+    if (!sheet) throw new Error("ไม่พบชีต '" + PRODUCTS_SHEET_NAME + "'");
+    const data = sheet.getDataRange().getValues();
+    const headers = data.shift();
+    const products = data.map(row => {
+      let product = {};
+      headers.forEach((header, i) => { if (header) product[header] = row[i]; });
+      return product;
+    });
+    return products;
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+function registerUser(userInfo) {
+  try {
+    if (!userInfo.username || !userInfo.password) {
+      return { success: false, message: 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน' };
+    }
+    const userSheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(USERS_SHEET_NAME);
+    if (!userSheet) throw new Error("ไม่พบชีต '" + USERS_SHEET_NAME + "'");
+    
+    const data = userSheet.getDataRange().getValues();
+    const headers = data.shift();
+    const usernameIndex = headers.indexOf('username');
+    const usernames = data.map(row => row[usernameIndex].toLowerCase());
+
+    if (usernames.includes(userInfo.username.toLowerCase())) {
+      return { success: false, message: 'ชื่อผู้ใช้งานนี้มีคนใช้แล้ว' };
+    }
+    userSheet.appendRow([ userInfo.username, userInfo.password ]);
+    return { success: true, message: 'สมัครสมาชิกสำเร็จ!' };
+  } catch (e) {
+    return { success: false, message: 'เกิดข้อผิดพลาด: ' + e.message };
+  }
+}
+
+function loginUser(credentials) {
+  try {
+    const userSheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(USERS_SHEET_NAME);
+    if (!userSheet) throw new Error("ไม่พบชีต '" + USERS_SHEET_NAME + "'");
+    const data = userSheet.getDataRange().getValues();
+    const headers = data.shift();
+    const usernameIndex = headers.indexOf('username');
+    const passwordIndex = headers.indexOf('password');
+    if (usernameIndex === -1 || passwordIndex === -1) {
+        throw new Error("ไม่พบคอลัมน์ 'username' หรือ 'password'");
+    }
+    for (let i = 0; i < data.length; i++) {
+      if (data[i][usernameIndex] === credentials.username && data[i][passwordIndex] === credentials.password) {
+        return { success: true, message: 'ล็อกอินสำเร็จ', user: { username: credentials.username } };
+      }
+    }
+    return { success: false, message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' };
+  } catch (e) {
+    return { success: false, message: 'เกิดข้อผิดพลาด: ' + e.message };
+  }
+}
+
+function processOrder(formData, fileData) {
+  try {
+    const orderSheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(ORDERS_SHEET_NAME);
+    if (!orderSheet) throw new Error("ไม่พบชีต '" + ORDERS_SHEET_NAME + "'");
+    const decodedFile = Utilities.base64Decode(fileData.bytes);
+    const blob = Utilities.newBlob(decodedFile, fileData.mimeType, fileData.name);
+    const orderFolder = DriveApp.getFolderById(ORDERS_FOLDER_ID);
+    const slipFile = orderFolder.createFile(blob);
+    const slipUrl = slipFile.getUrl();
+    const newRow = [ 
+      new Date(), formData.name, formData.phone, formData.address, formData.cartSummary, slipUrl
+    ];
+    orderSheet.appendRow(newRow);
+    return { success: true, message: 'บันทึกข้อมูลการสั่งซื้อเรียบร้อยแล้ว' };
+  } catch (e) {
+    return { success: false, message: 'เกิดข้อผิดพลาด: ' + e.message };
+  }
+}
